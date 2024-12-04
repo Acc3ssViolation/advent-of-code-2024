@@ -40,37 +40,38 @@ namespace Advent.Assignments
             }
         }
 
+        private static readonly ShapeMatcher3x3[] Matchers = [
+            new ShapeMatcher3x3("""
+                                M.M
+                                .A.
+                                S.S
+                                """),
+            new ShapeMatcher3x3("""
+                                M.S
+                                .A.
+                                M.S
+                                """),
+            new ShapeMatcher3x3("""
+                                S.S
+                                .A.
+                                M.M
+                                """),
+            new ShapeMatcher3x3("""
+                                S.M
+                                .A.
+                                S.M
+                                """),
+        ];
+
         public string Run(IReadOnlyList<string> input)
         {
-            ShapeMatcher3x3[] matchers = [
-                new ShapeMatcher3x3("""
-                                    M.M
-                                    .A.
-                                    S.S
-                                    """),
-                new ShapeMatcher3x3("""
-                                    M.S
-                                    .A.
-                                    M.S
-                                    """),
-                new ShapeMatcher3x3("""
-                                    S.S
-                                    .A.
-                                    M.M
-                                    """),
-                new ShapeMatcher3x3("""
-                                    S.M
-                                    .A.
-                                    S.M
-                                    """),
-            ];
             var grid = new CharGrid(input);
             var matchCount = 0;
             for (var y = 0; y < grid.Height; y++)
             {
                 for (var x = 0; x < grid.Width; x++)
                 {
-                    foreach (var matcher in matchers)
+                    foreach (var matcher in Matchers)
                     {
                         if (matcher.Match(new Point(x, y), grid))
                             matchCount++;
