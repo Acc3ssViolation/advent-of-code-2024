@@ -7,45 +7,95 @@ namespace Advent.Assignments
     {
         public string Run(IReadOnlyList<string> input)
         {
-            var sum = 0;
-            Span<int> maxColors = stackalloc int[3];
-            foreach (var game in input)
-            {
-                maxColors[0] = 0;
-                maxColors[1] = 0;
-                maxColors[2] = 0;
+            var safeCount = 0;
 
-                var reveals = game.Substring(game.IndexOf(':') + 1).Split(';');
-                foreach (var reveal in reveals)
+            foreach (var report in input)
+            {
+                var readings = report.ExtractInts();
+
+                var safe = IsSafeSequence(readings, true);
+                if (safe)
+                    safeCount++;
+
+                // Sanity check
+                //if (safe == false)
+                //{
+                //    for (var i = 0; i < readings.Count; i++)
+                //    {
+                //        if (IsSafeSequence(readings.CopyAndRemoveAt(i)))
+                //            throw new Exception($"Test sequence found! [{report}] by removing [{i}]");
+                //    }
+                //}
+            }
+
+            return safeCount.ToString();
+        }
+
+        private static bool IsSafeSequence(List<int> sequence, bool allowFix = false)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(sequence.Count, 2);
+
+            var sign = Math.Sign(sequence[1] - sequence[0]);
+            if (sign == 0)
+            {
+                // Two of the same readings is not allowed!
+                if (allowFix)
                 {
-                    var colors = reveal.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-                    foreach (var color in colors)
+                    if (IsSafeSequence(sequence.CopyAndRemoveAt(0)))
                     {
-                        var parts = color.Split(' ');
-                        var num = int.Parse(parts[0], System.Globalization.NumberStyles.None);
-                        var colorId = parts[1];
-                        switch (colorId[0])
-                        {
-                            case 'r':
-                                if (num > maxColors[0])
-                                    maxColors[0] = num;
-                                break;
-                            case 'g':
-                                if (num > maxColors[1])
-                                    maxColors[1] = num;
-                                break;
-                            case 'b':
-                                if (num > maxColors[2])
-                                    maxColors[2] = num;
-                                break;
-                        }
+                        //Logger.DebugLine($"[{sequence.AggregateString()}] is safe with [0] removed");
+                        return true;
                     }
+
+                    if (IsSafeSequence(sequence.CopyAndRemoveAt(1)))
+                    {
+                        //Logger.DebugLine($"[{sequence.AggregateString()}] is safe with [1] removed");
+                        return true;
+                    }
+
+                    //Logger.DebugLine($"[{sequence.AggregateString()}] is never safe");
                 }
 
-                var power = maxColors[0] * maxColors[1] * maxColors[2];
-                sum += power;
+                return false;
             }
-            return sum.ToString();
+
+            for (var i = 1; i < sequence.Count; i++)
+            {
+                var delta = sequence[i] - sequence[i - 1];
+
+                // The less than 1 case is already covered by the sign not being 0
+                var faulty = Math.Sign(delta) != sign || Math.Abs(delta) > 3;
+                if (faulty)
+                {
+                    if (allowFix)
+                    {
+                        if (IsSafeSequence(sequence.CopyAndRemoveAt(i)))
+                        {
+                            //Logger.DebugLine($"[{sequence.AggregateString()}] is safe with [{i}] removed");
+                            return true;
+                        }
+                        else if (IsSafeSequence(sequence.CopyAndRemoveAt(i - 1)))
+                        {
+                            //Logger.DebugLine($"[{sequence.AggregateString()}] is safe with [{i - 1}] removed");
+                            return true;
+                        }
+                        else if (i == 2 && IsSafeSequence(sequence.CopyAndRemoveAt(i - 2)))
+                        {
+                            //Logger.DebugLine($"[{sequence.AggregateString()}] is safe with [{i - 1}] removed");
+                            return true;
+                        }
+
+                        //Logger.DebugLine($"[{sequence.AggregateString()}] is never safe");
+                    }
+                    return false;
+                }
+            }
+
+            if (allowFix)
+            {
+                //Logger.DebugLine($"[{sequence.AggregateString()}] is always safe");
+            }
+            return true;
         }
     }
 }

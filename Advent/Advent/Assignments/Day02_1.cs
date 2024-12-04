@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Advent.Assignments
 {
@@ -7,45 +8,48 @@ namespace Advent.Assignments
     {
         public string Run(IReadOnlyList<string> input)
         {
-            const int MaxRed = 12;
-            const int MaxGreen = 13;
-            const int MaxBlue = 14;
-            var id = 1;
-            var sum = 0;
-            foreach (var game in input)
+            var safeCount = 0;
+
+            foreach (var report in input)
             {
-                var reveals = game.Substring(game.IndexOf(':') + 1).Split(';');
-                foreach (var reveal in reveals)
+                var readings = report.ExtractInts();
+
+                Debug.Assert(readings.Count >= 2);
+                var sign = Math.Sign(readings[1] - readings[0]);
+                if (sign == 0)
                 {
-                    var colors = reveal.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-                    foreach (var color in colors)
-                    {
-                        var parts = color.Split(' ');
-                        var num = int.Parse(parts[0], System.Globalization.NumberStyles.None);
-                        var colorId = parts[1];
-                        switch (colorId[0])
-                        {
-                            case 'r':
-                                if (num > MaxRed)
-                                    goto impossible;
-                                break;
-                            case 'g':
-                                if (num > MaxGreen)
-                                    goto impossible;
-                                break;
-                            case 'b':
-                                if (num > MaxBlue)
-                                    goto impossible;
-                                break;
-                        }
-                    }
+                    // Two of the same readings is not allowed!
+                    continue;
                 }
 
-                sum += id;
-            impossible:
-                id++;
+                var safe = true;
+                for (var i = 1; safe && i < readings.Count; i++)
+                {
+                    var delta = readings[i] - readings[i - 1];
+
+                    if (Math.Sign(delta) != sign)
+                    {
+                        // Sequence changed direction!
+                        safe = false;
+                        break;
+                    }
+
+                    var absDelta = Math.Abs(delta);
+                    if (absDelta > 3)
+                    {
+                        // Too big of a change!
+                        safe = false;
+                        break;
+                    }
+
+                    // The less than 1 case is already covered by the sign not being 0
+                }
+
+                if (safe)
+                    safeCount++;
             }
-            return sum.ToString();
+
+            return safeCount.ToString();
         }
     }
 }

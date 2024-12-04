@@ -15,5 +15,12 @@ namespace Advent
         {
             return list.Aggregate("", (a, b) => a.Length > 0 ? $"{a}, {func(b)}" : func(b));
         }
+
+        public static List<T> CopyAndRemoveAt<T>(this List<T> list, int index)
+        {
+            var copy = new List<T>(list);
+            copy.RemoveAt(index);
+            return copy;
+        }
     }
 }
