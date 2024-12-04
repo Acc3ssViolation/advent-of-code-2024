@@ -80,7 +80,7 @@ runner.SkipDays.Add(12);
 //runner.Add(new Day25_2());
 #endif
 
-var cookie = await File.ReadAllTextAsync("Data/cookie.txt", default);
+var cookie = await File.ReadAllTextAsync(Path.Combine(PathManager.DataDirectory, "cookie.txt"), default);
 using var downloader = new DataDownloader(cookie, 2024);
 runner.LogTimingToFile = true;
 await runner.PrepareAsync(downloader, default);
