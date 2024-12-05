@@ -6,7 +6,7 @@ namespace Advent
 {
     internal static class PathManager
     {
-#if DEBUG
+#if DEBUG || true
         private static string BaseDir
         {
             get
