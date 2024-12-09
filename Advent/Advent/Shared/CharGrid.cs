@@ -159,5 +159,10 @@ namespace Advent.Assignments
             }
             return new string(sb);
         }
+
+        public bool InBounds(Point point)
+        {
+            return point.x >= 0 && point.y >= 0 && point.x < Width && point.y < Height;
+        }
     }
 }
