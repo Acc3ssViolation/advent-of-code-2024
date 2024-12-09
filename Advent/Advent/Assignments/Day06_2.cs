@@ -7,69 +7,33 @@ namespace Advent.Assignments
 {
     internal class Day06_2 : IAssignment
     {
-        internal class LoopFinder
-        {
-            public int ObstructionCount { get; private set; }
-
-            private readonly CharGrid _grid;
-
-            public LoopFinder(CharGrid grid)
-            {
-                _grid = grid ?? throw new ArgumentNullException(nameof(grid));
-            }
-
-            private Point[] _corners = new Point[3];
-            private int _index;
-            private int _cornerCount = 0;
-            private bool _waitOnCorner = false;
-
-            public void OnCorner(Point newPosition)
-            {
-                if (_corners[GetOffset(2)] == newPosition)
-                    return;
-                _corners[_index] = newPosition;
-                _index = (_index + 1) % _corners.Length;
-                if (_cornerCount < 3)
-                    _cornerCount++;
-                _waitOnCorner = false;
-            }
-
-            public void OnMove(Point newPosition, Direction direction)
-            {
-                if (_cornerCount < 3 || _waitOnCorner)
-                    return;
-
-                var d2 = (_corners[GetOffset(1)] - _corners[GetOffset(0)]).Length;
-                var d4 = (newPosition - _corners[GetOffset(2)]).Length;
-                if (d4 >= d2)
-                {
-                    // Shortcut, just assume it will work lol
-                    var newWall = newPosition + direction.ToVector();
-                    if (_grid.InBounds(newWall))
-                    {
-                        ObstructionCount++;
-                        _grid[newWall] = (char)('0' + ObstructionCount);
-                    }
-
-                    _waitOnCorner = true;
-                }
-            }
-
-            private int GetOffset(int i)
-            {
-                return (_index + i) % _corners.Length;
-            }
-        }
-
         public string Run(IReadOnlyList<string> input)
         {
             var grid = new CharGrid(input);
             var pos = grid.Find('^');
+            grid[pos] = '.';
             var dir = Direction.North;
-            var finder = new LoopFinder(grid);
 
+            var loops = FindLoops(grid, pos, dir);
+            Debug.Assert(loops == grid.Count('O'));
+            //Logger.DebugLine(grid.ToString());
+
+            return loops.ToString();
+        }
+
+        private static int FindLoops(CharGrid grid, Point pos, Direction dir)
+        {
+            var pathPositions = new HashSet<Point>();
+            var visitedPositions = new HashSet<(Point, Direction)>();
+            var iterations = 0;
+            var loops = 0;
             while (grid.InBounds(pos))
             {
+                if (iterations++ >= 100000)
+                {
+                    throw new TimeoutException();
+                }
+                pathPositions.Add(pos);
                 var target = pos + dir.ToVector();
                 if (grid.InBounds(target))
                 {
@@ -77,16 +41,27 @@ namespace Advent.Assignments
                     if (tile == '#')
                     {
                         dir = dir.Right();
-                        finder.OnCorner(pos);
                         continue;
                     }
-                    else if (tile == '.')
+                    else if (tile != 'O' && !pathPositions.Contains(target))
                     {
-                        grid[target] = 'X';
+                        // Place a wall in front of us
+                        grid[target] = '#';
+                        // Find a loop
+                        if (HasLoop(visitedPositions, grid, pos, dir))
+                        {
+                            // Yes loop, mark it and count it!
+                            grid[target] = 'O';
+                            loops++;
+                        }
+                        else
+                        {
+                            // No loop, restore the map
+                            grid[target] = tile;
+                        }
                     }
 
                     pos = target;
-                    finder.OnMove(target, dir);
                 }
                 else
                 {
@@ -94,9 +69,45 @@ namespace Advent.Assignments
                 }
             }
 
-            Logger.DebugLine(grid.ToString());
+            return loops;
+        }
 
-            return finder.ObstructionCount.ToString();
+        private static bool HasLoop(HashSet<(Point, Direction)> visitedPositions, CharGrid grid, Point pos, Direction dir)
+        {
+            visitedPositions.Clear();
+            visitedPositions.Add((pos, dir));
+            var iterations = 0;
+            while (grid.InBounds(pos))
+            {
+                if (iterations++ >= 100000)
+                {
+                    throw new TimeoutException();
+                }
+
+                var target = pos + dir.ToVector();
+                if (grid.InBounds(target))
+                {
+                    var tile = grid[target];
+                    if (tile == '#')
+                    {
+                        dir = dir.Right();
+                        visitedPositions.Add((pos, dir));
+                        continue;
+                    }
+
+                    pos = target;
+                    if (visitedPositions.Contains((pos, dir)))
+                        return true;
+
+                    visitedPositions.Add((pos, dir));
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return false;
         }
     }
 }

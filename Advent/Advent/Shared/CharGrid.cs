@@ -147,6 +147,18 @@ namespace Advent.Assignments
             return default;
         }
 
+        public long Count(char chr)
+        {
+            var count = 0L;
+            for (var y = 0; y < Height; y++)
+                for (var x = 0; x < Width; x++)
+                {
+                    if (_data[y * Width + x] == chr)
+                        count++;
+                }
+            return count;
+        }
+
         public override string ToString()
         {
             var nl = Environment.NewLine.Length;
