@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Advent.Shared;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -7,68 +8,62 @@ using System.Threading.Tasks;
 
 namespace Advent.Assignments
 {
-    internal class Day09_1 : IAssignment
+    internal class Day09_2 : IAssignment
     {
+        private record struct File(ushort Id, LineRange Blocks);
+
         public string Run(IReadOnlyList<string> input)
         {
             var diskMap = input[0];
-            // I don't have the spare brain capacity at this point in time to bother with a sparse, range-based approach
-            var blocks = new ushort[diskMap.Length * 9];
+            var files = new File[diskMap.Length / 2 + 1];
             var blockCount = 0;
             ushort fileId = 0;
             var firstEmptyIndex = -1;
             for (var i = 0; i < diskMap.Length; i += 2)
             {
                 var fileLength = diskMap[i] - '0';
-                for (var k = 0; k < fileLength; k++)
-                {
-                    blocks[k + blockCount] = fileId;
-                }
+                files[fileId] = new File(fileId, new LineRange(blockCount, fileLength));
                 blockCount += fileLength;
                 fileId++;
 
                 if (i + 1 < diskMap.Length)
                 {
                     var emptyLength = diskMap[i + 1] - '0';
-                    for (var k = 0; k < emptyLength; k++)
-                    {
-                        blocks[k + blockCount] = 0xFFFF;
-                    }
                     if (firstEmptyIndex < 0)
                         firstEmptyIndex = blockCount;
                     blockCount += emptyLength;
                 }
             }
 
-            // Compress that shit
-            for (var i = blockCount - 1; i > 0; i--)
+            // Defrag that shit
+            for (var i = fileId - 1; i > 0; i--)
             {
-                // Ran out, exit
-                if (firstEmptyIndex >= i)
-                    break;
-
-                if (blocks[i] != 0xFFFF)
+                // Try to fit the file somewhere between our leftmost empty block and the file's current position
+                for (var k = firstEmptyIndex; k < files[i].Blocks.start; k++)
                 {
-                    // Swap blocks
-                    blocks[firstEmptyIndex] = blocks[i];
-                    blocks[i] = 0xFFFF;
-
-                    // Logger.DebugLine(DiskToString(blocks.AsSpan(0, blockCount)));
-
-                    // Move up empty index
-                    while (blocks[firstEmptyIndex] != 0xFFFF)
+                    var newFileBlock = new LineRange(k, files[i].Blocks.Length);
+                    var overlapsAny = false;
+                    for (var n = 0; n < files.Length && !overlapsAny; n++)
                     {
-                        firstEmptyIndex++;
+                        if (newFileBlock.Overlaps(files[n].Blocks))
+                        {
+                            overlapsAny = true;
+                            break;
+                        }
+                    }
+
+                    if (!overlapsAny)
+                    {
+                        files[i].Blocks = newFileBlock;
                     }
                 }
             }
 
             var sum = 0L;
-            for (var i = 0; i < firstEmptyIndex; i++)
+            for (var i = 0; i < files.Length; i++)
             {
-                var block = blocks[i];
-                Debug.Assert(block != 0xFFFF);
-                sum += block * i;                    
+                for (var k = files[i].Blocks.start; k < files[i].Blocks.end; k++)
+                    sum += files[i].Id * k;
             }
             return sum.ToString();
         }
