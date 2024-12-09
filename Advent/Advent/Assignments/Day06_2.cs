@@ -15,8 +15,6 @@ namespace Advent.Assignments
             var dir = Direction.North;
 
             var loops = FindLoops(grid, pos, dir);
-            Debug.Assert(loops == grid.Count('O'));
-            //Logger.DebugLine(grid.ToString());
 
             return loops.ToString();
         }
@@ -25,14 +23,9 @@ namespace Advent.Assignments
         {
             var pathPositions = new HashSet<Point>();
             var visitedPositions = new HashSet<(Point, Direction)>();
-            var iterations = 0;
             var loops = 0;
             while (grid.InBounds(pos))
             {
-                if (iterations++ >= 100000)
-                {
-                    throw new TimeoutException();
-                }
                 pathPositions.Add(pos);
                 var target = pos + dir.ToVector();
                 if (grid.InBounds(target))
@@ -76,14 +69,8 @@ namespace Advent.Assignments
         {
             visitedPositions.Clear();
             visitedPositions.Add((pos, dir));
-            var iterations = 0;
             while (grid.InBounds(pos))
             {
-                if (iterations++ >= 100000)
-                {
-                    throw new TimeoutException();
-                }
-
                 var target = pos + dir.ToVector();
                 if (grid.InBounds(target))
                 {
