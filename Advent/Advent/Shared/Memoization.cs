@@ -39,5 +39,26 @@ namespace Advent.Shared
                 return result;
             };
         }
+
+        public static Func<T1, T2, T3, TResult> Memoized<T1, T2, T3, TResult>(Func<T1, T2, T3, TResult> func, IEqualityComparer<(T1, T2, T3)>? comparer = null)
+        {
+            var dict = new Dictionary<(T1, T2, T3), TResult>(comparer);
+            long hits = 0;
+            long miss = 0;
+            return (t1, t2, t3) =>
+            {
+                if (!dict.TryGetValue((t1, t2, t3), out TResult? result))
+                {
+                    result = func(t1, t2, t3);
+                    dict.Add((t1, t2, t3), result);
+                    miss++;
+                }
+                else
+                {
+                    hits++;
+                }
+                return result;
+            };
+        }
     }
 }
