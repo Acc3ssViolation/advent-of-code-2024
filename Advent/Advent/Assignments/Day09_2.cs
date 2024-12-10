@@ -20,13 +20,14 @@ namespace Advent.Assignments
 
         public string Run(IReadOnlyList<string> input)
         {
-            var diskMap = input[0];
-            var files = new File[diskMap.Length / 2 + 1];
-            var gaps = new Gap[diskMap.Length / 2 + 1];
+            var diskMap = input[0].ToCharArray();
+            var diskMapLength = diskMap.Length;
+            var files = new File[diskMapLength / 2 + 1];
+            var gaps = new Gap[diskMapLength / 2 + 1];
             var gapCount = 0;
             var blockCount = 0;
             ushort fileId = 0;
-            for (var i = 0; i < diskMap.Length; i += 2)
+            for (var i = 0; i < diskMapLength; i += 2)
             {
                 var fileLength = diskMap[i] - '0';
                 Debug.Assert(fileLength > 0);
@@ -34,7 +35,7 @@ namespace Advent.Assignments
                 blockCount += fileLength;
                 fileId++;
 
-                if (i + 1 < diskMap.Length)
+                if (i + 1 < diskMapLength)
                 {
                     var emptyLength = diskMap[i + 1] - '0';
                     if (emptyLength == 0)
@@ -51,9 +52,7 @@ namespace Advent.Assignments
             {
                 // Try to fit the file somewhere between our leftmost empty block and the file's current position
                 var fileLength = files[i].Blocks.Length;
-                var g = firstGap;
-                var foundGap = false;
-                for (; g < gapCount;)
+                for (var g = firstGap; g < gapCount;)
                 {
                     if (gaps[g].Blocks.Length < fileLength)
                     {
@@ -68,36 +67,31 @@ namespace Advent.Assignments
                     else
                     {
                         // Gap can contain this file
-                        foundGap = true;
+                        ref var gap = ref gaps[g];
+
+                        files[i].Blocks = new LineRange(gap.Blocks.start, fileLength);
+                        if (gap.Blocks.Length > fileLength)
+                        {
+                            // Still space left in this gap
+                            gap.Blocks.start += fileLength;
+                        }
+                        else
+                        {
+                            // No more space!
+                            // Remove ourselves from the linked list (except for the first gap, which has invalid pointers)
+                            if (g != 0)
+                            {
+                                gaps[gap.Prev].Next = gap.Next;
+                                gaps[gap.Next].Prev = gap.Prev;
+                            }
+
+                            // If this was the left-most gap then we can start the next searches further in the list
+                            // because there are no more empty gaps here or to our left.
+                            if (g == firstGap)
+                                firstGap = gap.Next;
+                        }
                         break;
                     }
-                }
-
-                if (!foundGap)
-                    continue;
-
-                ref var gap = ref gaps[g];
-
-                files[i].Blocks = new LineRange(gap.Blocks.start, fileLength);
-                if (gap.Blocks.Length > fileLength)
-                {
-                    // Still space left in this gap
-                    gap.Blocks.start += fileLength;
-                }
-                else
-                {
-                    // No more space!
-                    // Remove ourselves from the linked list (except for the first gap, which has invalid pointers)
-                    if (g != 0)
-                    {
-                        gaps[gap.Prev].Next = gap.Next;
-                        gaps[gap.Next].Prev = gap.Prev;
-                    }
-
-                    // If this was the left-most gap then we can start the next searches further in the list
-                    // because there are no more empty gaps here or to our left.
-                    if (g == firstGap)
-                        firstGap = gap.Next;
                 }
             }
 
