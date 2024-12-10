@@ -15,73 +15,62 @@ namespace Advent.Assignments
         public string Run(IReadOnlyList<string> input)
         {
             var diskMap = input[0];
-            var blocks = new ushort[diskMap.Length * 9];
             var files = new File[diskMap.Length / 2 + 1];
+            var gaps = new LineRange[diskMap.Length / 2 + 1];
+            var gapCount = 0;
             var blockCount = 0;
             ushort fileId = 0;
-            var firstEmptyIndex = -1;
             for (var i = 0; i < diskMap.Length; i += 2)
             {
                 var fileLength = diskMap[i] - '0';
+                Debug.Assert(fileLength > 0);
                 files[fileId] = new File(fileId, new LineRange(blockCount, fileLength));
-                for (var k = 0; k < fileLength; k++)
-                {
-                    blocks[k + blockCount] = fileId;
-                }
                 blockCount += fileLength;
                 fileId++;
 
                 if (i + 1 < diskMap.Length)
                 {
                     var emptyLength = diskMap[i + 1] - '0';
-                    for (var k = 0; k < emptyLength; k++)
-                    {
-                        blocks[k + blockCount] = 0xFFFF;
-                    }
-                    if (firstEmptyIndex < 0)
-                        firstEmptyIndex = blockCount;
+                    if (emptyLength == 0)
+                        continue;
+                    gaps[gapCount] = new LineRange(blockCount, emptyLength);
                     blockCount += emptyLength;
+                    gapCount++;
                 }
             }
 
+            var blocks = new ushort[blockCount];
+            //FilesToBlocks(files, blocks);
+            //Logger.DebugLine(DiskToString(blocks));
+
             // Defrag that shit
+            var firstGap = 0;
             for (var i = fileId - 1; i > 0; i--)
             {
                 // Try to fit the file somewhere between our leftmost empty block and the file's current position
                 var fileLength = files[i].Blocks.Length;
-                for (var k = firstEmptyIndex; k < files[i].Blocks.start - fileLength; k++)
+                var g = firstGap;
+                var foundGap = false;
+                for (; g < gapCount; g++)
                 {
-                    var overlapsAny = false;
-                    for (var n = 0; n < fileLength; n++)
-                    {
-                        if (blocks[k + n] != 0xFFFF)
-                        {
-                            overlapsAny = true;
-                            break;
-                        }
-                    }
-
-                    if (overlapsAny)
+                    if (gaps[g].Length < fileLength)
                         continue;
 
-                    // No overlap!
-                    // Move the block!
-                    // Remove the old file id blocks
-                    var fileStart = files[i].Blocks.start;
-                    for (var n = 0; n < fileLength; n++)
-                    {
-                        Debug.Assert(blocks[fileStart + n] == i);
-                        blocks[fileStart + n] = 0xFFFF;
-                    }
-                    // Place new file id blocks
-                    for (var n = 0; n < fileLength; n++)
-                    {
-                        Debug.Assert(blocks[k + n] == 0xFFFF);
-                        blocks[k + n] = (ushort)i;
-                    }
-                    // Update file itself
-                    files[i].Blocks = new LineRange(k, files[i].Blocks.Length);
+                    if (gaps[g].end > files[i].Blocks.start)
+                        break;
+
+                    foundGap = true;
+                    break;
                 }
+
+                if (!foundGap)
+                    continue;
+
+                files[i].Blocks = new LineRange(gaps[g].start, fileLength);
+                gaps[g].start += fileLength;
+
+                //FilesToBlocks(files, blocks);
+                //Logger.DebugLine(DiskToString(blocks));
             }
 
             var sum = 0L;
@@ -91,17 +80,17 @@ namespace Advent.Assignments
                     sum += files[i].Id * k;
             }
 
-            var sum2 = 0L;
-            for (var i = 0; i < blockCount; i++)
-            {
-                var block = blocks[i];
-                if (block != 0xFFFF)
-                    sum2 += block * i;
-            }
-
-            Debug.Assert(sum == sum2);
-
             return sum.ToString();
+        }
+
+        private static void FilesToBlocks(Span<File> files, Span<ushort> blocks)
+        {
+            blocks.Fill(0xFFFF);
+            for (var i = 0; i < files.Length; i++)
+            {
+                for (var k = files[i].Blocks.start; k < files[i].Blocks.end; k++)
+                    blocks[k] = files[i].Id;
+            }
         }
 
         private static string DiskToString(Span<ushort> blocks)
