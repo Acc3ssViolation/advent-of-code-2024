@@ -11,12 +11,18 @@ namespace Advent.Assignments
     internal class Day09_2 : IAssignment
     {
         private record struct File(ushort Id, LineRange Blocks);
+        private struct Gap(ushort Prev, ushort Next, LineRange Blocks)
+        {
+            public ushort Prev = Prev;
+            public ushort Next = Next;
+            public LineRange Blocks = Blocks;
+        }
 
         public string Run(IReadOnlyList<string> input)
         {
             var diskMap = input[0];
             var files = new File[diskMap.Length / 2 + 1];
-            var gaps = new LineRange[diskMap.Length / 2 + 1];
+            var gaps = new Gap[diskMap.Length / 2 + 1];
             var gapCount = 0;
             var blockCount = 0;
             ushort fileId = 0;
@@ -33,15 +39,11 @@ namespace Advent.Assignments
                     var emptyLength = diskMap[i + 1] - '0';
                     if (emptyLength == 0)
                         continue;
-                    gaps[gapCount] = new LineRange(blockCount, emptyLength);
+                    gaps[gapCount] = new Gap((ushort)(gapCount - 1), (ushort)(gapCount + 1), new LineRange(blockCount, emptyLength));
                     blockCount += emptyLength;
                     gapCount++;
                 }
             }
-
-            var blocks = new ushort[blockCount];
-            //FilesToBlocks(files, blocks);
-            //Logger.DebugLine(DiskToString(blocks));
 
             // Defrag that shit
             var firstGap = 0;
@@ -51,26 +53,52 @@ namespace Advent.Assignments
                 var fileLength = files[i].Blocks.Length;
                 var g = firstGap;
                 var foundGap = false;
-                for (; g < gapCount; g++)
+                for (; g < gapCount;)
                 {
-                    if (gaps[g].Length < fileLength)
-                        continue;
-
-                    if (gaps[g].end > files[i].Blocks.start)
+                    if (gaps[g].Blocks.Length < fileLength)
+                    {
+                        // File doesn't fit in this gap, try the next gap
+                        g = gaps[g].Next;
+                    }
+                    else if (gaps[g].Blocks.end > files[i].Blocks.start)
+                    {
+                        // Gap ends after the start of the block, we ran out of gaps to check
                         break;
-
-                    foundGap = true;
-                    break;
+                    }
+                    else
+                    {
+                        // Gap can contain this file
+                        foundGap = true;
+                        break;
+                    }
                 }
 
                 if (!foundGap)
                     continue;
 
-                files[i].Blocks = new LineRange(gaps[g].start, fileLength);
-                gaps[g].start += fileLength;
+                ref var gap = ref gaps[g];
 
-                //FilesToBlocks(files, blocks);
-                //Logger.DebugLine(DiskToString(blocks));
+                files[i].Blocks = new LineRange(gap.Blocks.start, fileLength);
+                if (gap.Blocks.Length > fileLength)
+                {
+                    // Still space left in this gap
+                    gap.Blocks.start += fileLength;
+                }
+                else
+                {
+                    // No more space!
+                    // Remove ourselves from the linked list (except for the first gap, which has invalid pointers)
+                    if (g != 0)
+                    {
+                        gaps[gap.Prev].Next = gap.Next;
+                        gaps[gap.Next].Prev = gap.Prev;
+                    }
+
+                    // If this was the left-most gap then we can start the next searches further in the list
+                    // because there are no more empty gaps here or to our left.
+                    if (g == firstGap)
+                        firstGap = gap.Next;
+                }
             }
 
             var sum = 0L;
