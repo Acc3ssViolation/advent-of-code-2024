@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Advent.Assignments
 {
-    internal class Day10_1 : IAssignment
+    internal class Day10_2 : IAssignment
     {
         public string Run(IReadOnlyList<string> input)
         {
@@ -24,21 +24,18 @@ namespace Advent.Assignments
 
             var sum = 0;
 
-            var peaks = new HashSet<Point>();
             var pointsToCheck = new Queue<Point>();
             foreach (var trailhead in trailheads)
             {
-                peaks.Clear();
                 pointsToCheck.Clear();
                 pointsToCheck.Enqueue(trailhead);
                 while (pointsToCheck.Count > 0)
                 {
                     var point = pointsToCheck.Dequeue();
                     var elevation = grid[point];
-                    if (elevation == 9 && !peaks.Contains(point))
+                    if (elevation == 9)
                     {
                         sum++;
-                        peaks.Add(point);
                     }
                     else
                     {
