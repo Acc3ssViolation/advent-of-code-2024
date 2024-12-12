@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Buffers;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Advent.Assignments
@@ -17,11 +18,29 @@ namespace Advent.Assignments
             }
         }
 
+        private struct SimpleList<T>
+        {
+            public T[] data;
+            public int length;
+
+            public void Add(T item)
+            {
+                data ??= ArrayPool<T>.Shared.Rent(256);
+                data[length++] = item;
+            }
+
+            public void Clear()
+            {
+                length = 0;
+            }
+        }
+
         public string Run(IReadOnlyList<string> input)
         {
             var height = input.Count;
             var width = input[0].Length;
             var regions = new Region[width * height / 5];
+            var regionTiles = new SimpleList<int>[regions.Length];
             var areaMap = new int[width * height];
             var regionCount = 0;
 
@@ -84,15 +103,16 @@ namespace Advent.Assignments
                                 regions[regionIndex].area += regions[topRegionIndex].area;
                                 regions[regionIndex].edges += regions[topRegionIndex].edges;
 
-                                for (var xx = 0; xx < width; xx++)
+                                ref var topTiles = ref regionTiles[topRegionIndex];
+                                ref var tiles = ref regionTiles[regionIndex];
+                                for (var i = 0; i < topTiles.length; i++)
                                 {
-                                    for (var yy = 0; yy <= y; yy++)
-                                    {
-                                        if (areaMap[xx + yy * width] == topRegionIndex)
-                                            areaMap[xx + yy * width] = regionIndex;
-                                    }
+                                    var point = topTiles.data[i];
+                                    areaMap[point] = regionIndex;
+                                    tiles.Add(point);
                                 }
                                 regions[topRegionIndex].area = 0;
+                                regionTiles[topRegionIndex].Clear();
                                 //regions[topRegionIndex].edges = 0;
                             }
                         }
@@ -116,6 +136,7 @@ namespace Advent.Assignments
                     }
 
                     areaMap[x + y * width] = regionIndex;
+                    regionTiles[regionIndex].Add(x + y * width);
                     regions[regionIndex].plant = plant;
                     regions[regionIndex].area += 1;
                     regions[regionIndex].edges += edges;
@@ -138,7 +159,7 @@ namespace Advent.Assignments
                     price += regions[i].area * regions[i].edges;
                 }
             }
-            
+
             //var usedRegions = regions.Where(r => r.area > 0).ToList();
             //Debug.Assert(usedRegions.Sum(r => r.area) == width * height);
             return price.ToString();
