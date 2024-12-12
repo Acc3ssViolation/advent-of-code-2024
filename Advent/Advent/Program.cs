@@ -26,8 +26,6 @@ foreach (var item in all)
 // Slow-ish days, skip during normal runs
 runner.SkipDays.Add(6);
 runner.SkipDays.Add(7);
-runner.SkipDays.Add(14);
-runner.SkipDays.Add(12);
 //runner.MaxDay = 12;
 #else
 //runner.Add(new Day01_1());
