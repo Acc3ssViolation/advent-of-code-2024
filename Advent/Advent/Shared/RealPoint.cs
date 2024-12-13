@@ -45,6 +45,9 @@ namespace Advent.Shared
         public static RealPoint operator *(RealPoint a, double n) => new(a.x * n, a.y * n);
         public static RealPoint operator /(RealPoint a, double n) => new(a.x / n, a.y / n);
 
+        public static RealPoint operator *(RealPoint a, RealPoint b) => new(a.x * b.x, a.y * b.x);
+        public static RealPoint operator /(RealPoint a, RealPoint b) => new(a.x / a.x, a.y / b.y);
+
         public static bool operator ==(RealPoint a, RealPoint b) => a.x == b.x && a.y == b.y;
         public static bool operator !=(RealPoint a, RealPoint b) => a.x != b.x || a.y != b.y;
 
