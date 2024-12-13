@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Text.RegularExpressions;
 
 namespace Advent
 {
-    internal static class ParseUtils
+    public static class ParseUtils
     {
         public static long ToLongIgnoreWhitespace(this ReadOnlySpan<char> str)
         {
