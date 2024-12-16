@@ -13,7 +13,7 @@ namespace Advent.Shared
         public int x;
         public int y;
 
-        public int Length => Math.Abs(x) + Math.Abs(y);
+        public readonly int Length => Math.Abs(x) + Math.Abs(y);
 
         public Point()
         {
@@ -44,23 +44,36 @@ namespace Advent.Shared
         public static bool operator ==(Point a, Point b) => a.x == b.x && a.y == b.y;
         public static bool operator !=(Point a, Point b) => a.x != b.x || a.y != b.y;
 
-        public void Deconstruct(out int x, out int y)
+        public readonly void Deconstruct(out int x, out int y)
         {
             x = this.x;
             y = this.y;
         }
 
-        public override string ToString()
+        public readonly Point Wrap(Point size)
+        {
+            var rx = x % size.x;
+            var ry = y % size.y;
+
+            if (rx < 0)
+                rx += size.x;
+            if (ry < 0)
+                ry += size.y;
+
+            return new Point(rx, ry);
+        }
+
+        public readonly override string ToString()
         {
             return $"[{x},{y}]";
         }
 
-        public override bool Equals(object? obj)
+        public readonly override bool Equals(object? obj)
         {
             return obj is Point p && p == this;
         }
 
-        public override int GetHashCode()
+        public readonly override int GetHashCode()
         {
             return HashCode.Combine(x, y);
         }
