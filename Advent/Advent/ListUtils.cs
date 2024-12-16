@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 namespace Advent
 {
@@ -21,6 +22,12 @@ namespace Advent
             var copy = new List<T>(list);
             copy.RemoveAt(index);
             return copy;
+        }
+
+        public static double StandardDeviation(this IEnumerable<int> values)
+        {
+            double avg = values.Average();
+            return Math.Sqrt(values.Average(v => Math.Pow(v - avg, 2)));
         }
     }
 }
